@@ -80,6 +80,7 @@ def main():
     array1 = array(list(sortedFreqDists[0].values()))
     array2 = array(list(sortedFreqDists[1].values()))
     #  Kolmogorov-Smirnov
+    # https://towardsdatascience.com/how-to-compare-two-distributions-in-practice-8c676904a285
     print("Result of Kolmogorov-Smirnov:\n", stats.ks_2samp(array1, array2))
   
 if __name__== "__main__":
