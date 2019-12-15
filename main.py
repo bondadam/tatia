@@ -6,6 +6,7 @@ from scipy import stats ##requires numpy + mkl
 from scipy import array
 from collections import Counter
 from nltk.corpus import stopwords
+from tabulate import tabulate
 
 ##NLTK packages to install : punkt
 
@@ -30,6 +31,16 @@ def getTexts():
         secondText = f2.read()
     return [firstText, secondText]
 
+
+def getFilenames():
+    """Gets filenames of text files for display purposes"""
+    files = [f for f in os.listdir('.') if os.path.isfile(f)]
+    textFiles = []
+    for f in files:
+        if f[-4:] == ".txt":
+            textFiles.append(f)
+    return textFiles
+    
 def unpunctuate(tokenizedText):
     """Input: tokenized text
     Removes tokens that are only punctuation from array."""
@@ -69,9 +80,10 @@ def getStopWordFrequency(tokenizedText):
 
 def main():
     rawTexts = getTexts()
+    filenames = getFilenames()
+
     tokenizedTexts = list(map(tokenize, rawTexts))
     unpunctuatedTexts = list(map(unpunctuate, tokenizedTexts))
-
     textLengths = list(map(len, unpunctuatedTexts))
 
     tokenFreqDists = list(map(getTokenFreqDist, unpunctuatedTexts))
@@ -88,6 +100,9 @@ def main():
 
     array1 = array(list(sortedFreqDists[0].values()))
     array2 = array(list(sortedFreqDists[1].values()))
+
+    kolmogorovResult = stats.ks_2samp(array1, array2).pvalue
+    
     #  Kolmogorov-Smirnov
     # https://towardsdatascience.com/how-to-compare-two-distributions-in-practice-8c676904a285
     
@@ -97,11 +112,7 @@ def main():
     ##    The p-value returned by the k-s test has the same interpretation as other p-values.
     ##    You reject the null hypothesis that the two samples were drawn from the same distribution if the p-value is less than your significance level.
 
-    print("%d words in text 1, %d words in text 2" % (textLengths[0], textLengths[1]))
-    
-    print("Result of Kolmogorov-Smirnov:\n", stats.ks_2samp(array1, array2))
-
-    print("Frequency of stop words is %.2f in text 1, %.2f in text2 " % (stopWordFreqs[0], stopWordFreqs[1]))
+    results = [[filenames[i], textLengths[i], kolmogorovResult, stopWordFreqs[i]] for i in range(len(rawTexts))]
 
 
     ### Temporairement
@@ -110,12 +121,16 @@ def main():
     #### kolmogorov
     #### stop word freqs
 
-    results = [min(textLengths)/max(textLengths),       ## total words
-               stats.ks_2samp(array1, array2).pvalue,          ## kolmogorov
+    averagedResults = [min(textLengths)/max(textLengths),       ## total words
+               kolmogorovResult,                                  ## kolmogorov
                min(stopWordFreqs)/max(stopWordFreqs)    ## stop word frequencies
                ]
-    finalProbability = statistics.mean(results) * 100
 
-    print("Probability of same author : %.2f%%\n" % (finalProbability))
+    results.append(["Similarité"] + averagedResults)
+
+    print(tabulate(results, headers=["Corpus","# de mots", "Kolmogorov distribs de fréq de token", "Fréquence de stop words"], tablefmt="fancy_grid"))
+    finalProbability = statistics.mean(averagedResults) * 100
+
+    print("\n\nProbability of same author : %.2f%%\n" % (finalProbability))
 if __name__== "__main__":
   main()
