@@ -1,6 +1,7 @@
 import nltk
 import os
 import statistics
+import re
 #import matplotlib
 from scipy import stats ##requires numpy + mkl
 from scipy import array
@@ -64,7 +65,7 @@ def tokenize(textString):
 def getTokenizedSentences(textString):
     """Input: text string
     returns array of sentences, each sentence an array of tokenized words"""
-    sentences = textString.split(".")
+    sentences = re.split('\.+|\?+|\!+|[\?\!]+| [\r\n]+',textString)
     return [nltk.word_tokenize(sentence, language='french') for sentence in sentences]
 
 
@@ -116,6 +117,8 @@ def main():
 
     meanSentenceLengths = list(map(getSentenceMeanLength, tokenizedSentences))
     #print(wordFrequency(unpunctuatedTexts[0]))
+
+    #print(tokenizedSentences[1])
 
     #sortedFreqDists[0].plot(15,title="Frequency Distribution of text 1")
 
