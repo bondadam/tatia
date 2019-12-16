@@ -61,11 +61,30 @@ def tokenize(textString):
     returns array of tokenized words"""
     return nltk.word_tokenize(textString, language='french')
 
+def getTokenizedSentences(textString):
+    """Input: text string
+    returns array of sentences, each sentence an array of tokenized words"""
+    sentences = textString.split(".")
+    return [nltk.word_tokenize(sentence, language='french') for sentence in sentences]
+
+
 def getTokenFreqDist(tokenizedText):
     """Input: tokenized text
     returns array of token length frequency distribution"""
     tokenLengths = [len(token) for token in tokenizedText]
     return nltk.FreqDist(tokenLengths)
+
+def getSentenceLengthFreqDist(tokenizedSentences):
+    """Input: tokenized sentences
+    returns array of sentence length frequency distribution"""
+    sentenceLengths = [len(sentence) for sentence in tokenizedSentences]
+    return nltk.FreqDist(sentenceLengths)
+
+def getSentenceMeanLength(tokenizedSentences):
+    """Input: tokenized sentences
+    returns average length (nb words)"""
+    sentenceLengths = [len(sentence) for sentence in tokenizedSentences]
+    return statistics.mean(sentenceLengths)
 
 def sortFreqDist(freqDist):
     return dict(sorted(freqDist.items()))
@@ -87,22 +106,30 @@ def main():
     textLengths = list(map(len, unpunctuatedTexts))
 
     tokenFreqDists = list(map(getTokenFreqDist, unpunctuatedTexts))
-    sortedFreqDists = list(map(sortFreqDist, tokenFreqDists))
+    sortedTokenFreqDists = list(map(sortFreqDist, tokenFreqDists))
 
     stopWordFreqs = list(map(getStopWordFrequency, tokenizedTexts))
-    
+
+    tokenizedSentences = list(map(getTokenizedSentences, rawTexts))
+    sentenceFreqDists = list(map(getSentenceLengthFreqDist, tokenizedSentences))
+    sortedSentenceFreqDists = list(map(sortFreqDist, sentenceFreqDists))
+
+    meanSentenceLengths = list(map(getSentenceMeanLength, tokenizedSentences))
     #print(wordFrequency(unpunctuatedTexts[0]))
 
     #sortedFreqDists[0].plot(15,title="Frequency Distribution of text 1")
 
-    #print(tokenFreqDists[0].values())
-    #print(sortedFreqDists[0].values(), sortedFreqDists[1].values())
+    array1 = array(list(sortedTokenFreqDists[0].values()))
+    array2 = array(list(sortedTokenFreqDists[1].values()))
 
-    array1 = array(list(sortedFreqDists[0].values()))
-    array2 = array(list(sortedFreqDists[1].values()))
+    tokenFreqDistResult = stats.ks_2samp(array1, array2).pvalue
 
-    kolmogorovResult = stats.ks_2samp(array1, array2).pvalue
-    
+    array1 = array(list(sortedSentenceFreqDists[0].values()))
+    array2 = array(list(sortedSentenceFreqDists[1].values()))
+
+    sentenceFreqDistResult = stats.ks_2samp(array1, array2).pvalue
+
+
     #  Kolmogorov-Smirnov
     # https://towardsdatascience.com/how-to-compare-two-distributions-in-practice-8c676904a285
     
@@ -112,7 +139,7 @@ def main():
     ##    The p-value returned by the k-s test has the same interpretation as other p-values.
     ##    You reject the null hypothesis that the two samples were drawn from the same distribution if the p-value is less than your significance level.
 
-    results = [[filenames[i], textLengths[i], kolmogorovResult, stopWordFreqs[i]] for i in range(len(rawTexts))]
+    results = [[filenames[i], textLengths[i], tokenFreqDistResult, stopWordFreqs[i], sentenceFreqDistResult, meanSentenceLengths[i]] for i in range(len(rawTexts))]
 
 
     ### Temporairement
@@ -122,15 +149,18 @@ def main():
     #### stop word freqs
 
     averagedResults = [min(textLengths)/max(textLengths),       ## total words
-               kolmogorovResult,                                  ## kolmogorov
-               min(stopWordFreqs)/max(stopWordFreqs)    ## stop word frequencies
+               tokenFreqDistResult,                                  ## kolmogorov
+               min(stopWordFreqs)/max(stopWordFreqs),    ## stop word frequencies
+               sentenceFreqDistResult, ## also kolmogorov
+               min(meanSentenceLengths)/max(meanSentenceLengths)  ## sentence lengths in words
                ]
 
     results.append(["Similarité"] + averagedResults)
 
-    print(tabulate(results, headers=["Corpus","# de mots", "Kolmogorov distribs de fréq de token", "Fréquence de stop words"], tablefmt="fancy_grid"))
+    print(tabulate(results, headers=["Corpus","# de mots", "K-S distribs de fréq de token", "Fréquence de stop words", "K-S distribs de fréq de phrase", "Longueur moyenne de phrase"], tablefmt="fancy_grid"))
     finalProbability = statistics.mean(averagedResults) * 100
 
     print("\n\nProbability of same author : %.2f%%\n" % (finalProbability))
 if __name__== "__main__":
   main()
+  input("Press Enter to continue...")
