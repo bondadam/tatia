@@ -98,6 +98,18 @@ def getStopWordFrequency(tokenizedText):
     filteredArray = [word for word in tokenizedText if not word in stopWords]
     return (len(tokenizedText)-len(filteredArray))/len(tokenizedText)
 
+def getLongWordsSimilarity(unpunctuatedTexts):
+    """Input: unpunctuated tokenized texts
+    keep only words > 6 characters
+    return distance between sets
+    """
+    filteredTexts = []
+    for text in unpunctuatedTexts:
+        filteredText= set([word for word in text if len(word) >= 7])
+        filteredTexts.append(filteredText)
+    return nltk.jaccard_distance(filteredTexts[0], filteredTexts[1])
+    
+
 def main():
     rawTexts = getTexts()
     filenames = getFilenames()
@@ -105,6 +117,7 @@ def main():
     tokenizedTexts = list(map(tokenize, rawTexts))
     unpunctuatedTexts = list(map(unpunctuate, tokenizedTexts))
     textLengths = list(map(len, unpunctuatedTexts))
+
 
     tokenFreqDists = list(map(getTokenFreqDist, unpunctuatedTexts))
     sortedTokenFreqDists = list(map(sortFreqDist, tokenFreqDists))
@@ -116,6 +129,8 @@ def main():
     sortedSentenceFreqDists = list(map(sortFreqDist, sentenceFreqDists))
 
     meanSentenceLengths = list(map(getSentenceMeanLength, tokenizedSentences))
+
+    longWordsSimilarity = getLongWordsSimilarity(unpunctuatedTexts)
     #print(wordFrequency(unpunctuatedTexts[0]))
 
     #print(tokenizedSentences[1])
@@ -124,6 +139,7 @@ def main():
 
     array1 = array(list(sortedTokenFreqDists[0].values()))
     array2 = array(list(sortedTokenFreqDists[1].values()))
+    
 
     tokenFreqDistResult = stats.ks_2samp(array1, array2).pvalue
 
@@ -141,8 +157,7 @@ def main():
     ##    The closer this number is to 0 the more likely it is that the two samples were drawn from the same distribution.
     ##    The p-value returned by the k-s test has the same interpretation as other p-values.
     ##    You reject the null hypothesis that the two samples were drawn from the same distribution if the p-value is less than your significance level.
-
-    results = [[filenames[i], textLengths[i], tokenFreqDistResult, stopWordFreqs[i], sentenceFreqDistResult, meanSentenceLengths[i]] for i in range(len(rawTexts))]
+    results = [[filenames[i], tokenFreqDistResult, stopWordFreqs[i], sentenceFreqDistResult, meanSentenceLengths[i], longWordsSimilarity] for i in range(len(rawTexts))]
 
 
     ### Temporairement
@@ -151,16 +166,15 @@ def main():
     #### kolmogorov
     #### stop word freqs
 
-    averagedResults = [min(textLengths)/max(textLengths),       ## total words
-               tokenFreqDistResult,                                  ## kolmogorov
+    averagedResults = [tokenFreqDistResult,                                  ## kolmogorov
                min(stopWordFreqs)/max(stopWordFreqs),    ## stop word frequencies
                sentenceFreqDistResult, ## also kolmogorov
-               min(meanSentenceLengths)/max(meanSentenceLengths)  ## sentence lengths in words
-               ]
+               min(meanSentenceLengths)/max(meanSentenceLengths),  ## sentence lengths in words
+               1 - longWordsSimilarity]
 
     results.append(["Similarité"] + averagedResults)
 
-    print(tabulate(results, headers=["Corpus","# de mots", "K-S distribs de fréq de token", "Fréquence de stop words", "K-S distribs de fréq de phrase", "Longueur moyenne de phrase"], tablefmt="fancy_grid"))
+    print(tabulate(results, headers=["Corpus", "K-S distribs de fréq de token", "Fréquence de stop words", "K-S distribs de fréq de phrase", "Longueur moyenne de phrase", "Distance Jaccard mots > 7 lettres"], tablefmt="fancy_grid"))
     finalProbability = statistics.mean(averagedResults) * 100
 
     print("\n\nProbability of same author : %.2f%%\n" % (finalProbability))
