@@ -146,6 +146,8 @@ def main():
     array1 = array(list(sortedSentenceFreqDists[0].values()))
     array2 = array(list(sortedSentenceFreqDists[1].values()))
 
+    print(sortedSentenceFreqDists[0])
+
     sentenceFreqDistResult = stats.ks_2samp(array1, array2).pvalue
 
 
