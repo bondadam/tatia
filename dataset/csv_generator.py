@@ -100,9 +100,10 @@ def getLongWordsSimilarity(unpunctuatedTexts):
     keep only words > 6 characters
     return distance between sets
     """
+    stopWords = set(stopwords.words('french'))
     filteredTexts = []
     for text in unpunctuatedTexts:
-        filteredText= set([word for word in text if len(word) >= 5])
+        filteredText= set([word for word in text if len(word) >= 5 and word not in stopWords])
         filteredTexts.append(filteredText)
     return nltk.jaccard_distance(filteredTexts[0], filteredTexts[1])
     
@@ -196,6 +197,9 @@ def analyze(rawTexts):
     return averagedResults
 
 def main():
+    ratio = 0.5
+    nbSameAuthor = 0
+    nbTotal = 0
     allTexts = getTexts()
     with open('data.csv', 'w', newline='', encoding="utf-8") as file:
         writer = csv.writer(file)
@@ -220,10 +224,16 @@ def main():
                 rawText1 = "\n".join(splitText1[3:])
                 rawText2 = "\n".join(splitText2[3:])
                 
-                print(author1 + " - " + title1 + " VS " + author2 + " - " + title2 + " : ") #+ str(analyze([rawText1, rawText2])))
-                result = analyze([rawText1, rawText2])
                 sameAuthor = author1.lower() == author2.lower()
-                writer.writerow(result + [int(sameAuthor)])
+                skipped = True
+                if nbTotal == 0 or sameAuthor or nbSameAuthor/nbTotal > ratio:
+                    result = analyze([rawText1, rawText2])
+                    writer.writerow(result + [int(sameAuthor)])
+                    nbTotal += 1
+                    nbSameAuthor += 1 if sameAuthor else 0
+                    skipped = False
+                print(author1 + " - " + title1 + " VS " + author2 + " - " + title2 + ": " + "skipped" if skipped else "done")
+                print(nbSameAuthor/nbTotal)
                 file.flush()
                 ### flush pour enregistrer les changements
 if __name__== "__main__":
