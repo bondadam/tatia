@@ -1,8 +1,3 @@
-# TATIA
-
-## BOND Adam
-## VAILLANT-BEUCHOT Maël
-=======
 # Projet de TATIA
 ## Adam Bond - Maël Vaillant--Beuchot
 
